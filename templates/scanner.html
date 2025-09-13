@@ -88,18 +88,44 @@
                             </h4>
                         </div>
                         <div class="card-body">
-                            <!-- Zone de saisie manuelle -->
+                            <!-- Zone de saisie manuelle et scan caméra -->
                             <div class="scanner-area d-flex flex-column align-items-center justify-content-center p-4" id="scannerArea">
-                                <i class="fas fa-qrcode fa-4x text-muted mb-3"></i>
-                                <h5 class="text-muted mb-3">Scannez ou saisissez le QR code</h5>
-                                <div class="w-100" style="max-width: 500px;">
+                                <!-- Sélecteur de mode -->
+                                <div class="btn-group mb-4" role="group">
+                                    <input type="radio" class="btn-check" name="scanMode" id="cameraMode" checked>
+                                    <label class="btn btn-outline-primary" for="cameraMode">
+                                        <i class="fas fa-camera me-1"></i>Caméra
+                                    </label>
+                                    
+                                    <input type="radio" class="btn-check" name="scanMode" id="manualMode">
+                                    <label class="btn btn-outline-primary" for="manualMode">
+                                        <i class="fas fa-keyboard me-1"></i>Manuel
+                                    </label>
+                                </div>
+
+                                <!-- Zone de scan caméra -->
+                                <div id="cameraContainer" class="w-100 text-center">
+                                    <div id="qr-reader" style="width: 100%; max-width: 500px; margin: 0 auto;"></div>
+                                    <div id="cameraStatus" class="mt-3">
+                                        <i class="fas fa-camera fa-3x text-muted mb-3"></i>
+                                        <h5 class="text-muted mb-3">Scanner QR code avec la caméra</h5>
+                                        <button type="button" class="btn btn-success" id="startCamera">
+                                            <i class="fas fa-play me-2"></i>Démarrer la caméra
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Zone de saisie manuelle -->
+                                <div id="manualContainer" class="w-100" style="max-width: 500px; display: none;">
+                                    <i class="fas fa-qrcode fa-4x text-muted mb-3"></i>
+                                    <h5 class="text-muted mb-3">Saisissez le QR code manuellement</h5>
                                     <form id="scanForm">
                                         <div class="mb-3">
                                             <label for="qrData" class="form-label">
                                                 <i class="fas fa-keyboard me-1"></i>Contenu du QR Code
                                             </label>
                                             <textarea class="form-control" id="qrData" name="qr_data" rows="4" 
-                                                      placeholder="Collez ici le contenu du QR code ou scannez avec votre téléphone..."></textarea>
+                                                      placeholder="Collez ici le contenu du QR code..."></textarea>
                                         </div>
                                         
                                         <div class="d-grid">
@@ -136,19 +162,23 @@
                             <h6><i class="fas fa-info-circle me-2"></i>Instructions</h6>
                             <div class="text-muted">
                                 <small>
-                                    <strong>Scanner avec téléphone :</strong><br>
-                                    1. Ouvrez l'appareil photo<br>
-                                    2. Pointez vers le QR code<br>
-                                    3. Copiez le contenu détecté<br>
-                                    4. Collez dans le champ ci-contre<br><br>
+                                    <strong>🔥 Mode Caméra (Recommandé) :</strong><br>
+                                    1. Cliquez sur "Démarrer la caméra"<br>
+                                    2. Autorisez l'accès à la caméra<br>
+                                    3. Pointez vers le QR code<br>
+                                    4. Validation automatique !<br><br>
                                     
-                                    <strong>Saisie manuelle :</strong><br>
-                                    • Collez directement le contenu<br>
-                                    • Vérifiez qu'il commence par "TICKET_V1:"<br>
-                                    • Cliquez sur "Valider"<br><br>
+                                    <strong>📝 Mode Manuel :</strong><br>
+                                    1. Scannez avec l'app caméra<br>
+                                    2. Copiez le contenu détecté<br>
+                                    3. Collez dans le champ<br>
+                                    4. Cliquez "Valider"<br><br>
                                     
-                                    <strong>Entrée unique :</strong><br>
-                                    • Tous les scans sont enregistrés à l'entrée principale
+                                    <strong>✅ Sécurité :</strong><br>
+                                    • Validation cryptographique<br>
+                                    • Protection anti-copie<br>
+                                    • Usage unique par billet<br>
+                                    • Historique complet
                                 </small>
                             </div>
                         </div>
@@ -179,21 +209,205 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script>
         let recentValidations = [];
+        let html5QrCode = null;
+        let isScanning = false;
 
         document.addEventListener('DOMContentLoaded', function() {
             const scanForm = document.getElementById('scanForm');
             const scannerArea = document.getElementById('scannerArea');
             const validationResults = document.getElementById('validationResults');
             const qrDataInput = document.getElementById('qrData');
+            
+            // Éléments pour la gestion des modes
+            const cameraModeRadio = document.getElementById('cameraMode');
+            const manualModeRadio = document.getElementById('manualMode');
+            const cameraContainer = document.getElementById('cameraContainer');
+            const manualContainer = document.getElementById('manualContainer');
+            const startCameraBtn = document.getElementById('startCamera');
+            const cameraStatus = document.getElementById('cameraStatus');
 
-            // Gestion du formulaire de scan
+            // Gestion du changement de mode
+            cameraModeRadio.addEventListener('change', function() {
+                if (this.checked) {
+                    showCameraMode();
+                }
+            });
+
+            manualModeRadio.addEventListener('change', function() {
+                if (this.checked) {
+                    showManualMode();
+                }
+            });
+
+            // Bouton démarrer caméra
+            startCameraBtn.addEventListener('click', function() {
+                startQrCodeScanner();
+            });
+
+            function showCameraMode() {
+                cameraContainer.style.display = 'block';
+                manualContainer.style.display = 'none';
+                if (isScanning) {
+                    stopQrCodeScanner();
+                }
+            }
+
+            function showManualMode() {
+                cameraContainer.style.display = 'none';
+                manualContainer.style.display = 'block';
+                if (isScanning) {
+                    stopQrCodeScanner();
+                }
+                qrDataInput.focus();
+            }
+
+            function startQrCodeScanner() {
+                const config = {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: 1.0
+                };
+
+                html5QrCode = new Html5Qrcode("qr-reader");
+                
+                // Cacher le bouton et afficher le statut
+                startCameraBtn.style.display = 'none';
+                cameraStatus.innerHTML = `
+                    <div class="text-info">
+                        <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                        <p>Démarrage de la caméra...</p>
+                    </div>
+                `;
+
+                Html5Qrcode.getCameras().then(devices => {
+                    if (devices && devices.length) {
+                        // Utiliser la caméra arrière si disponible (pour mobile)
+                        let cameraId = devices[0].id;
+                        if (devices.length > 1) {
+                            // Chercher la caméra arrière
+                            const rearCamera = devices.find(device => 
+                                device.label.toLowerCase().includes('back') || 
+                                device.label.toLowerCase().includes('rear') ||
+                                device.label.toLowerCase().includes('environment')
+                            );
+                            if (rearCamera) {
+                                cameraId = rearCamera.id;
+                            }
+                        }
+
+                        html5QrCode.start(
+                            cameraId,
+                            config,
+                            (decodedText, decodedResult) => {
+                                // QR code détecté avec succès
+                                onQrCodeDetected(decodedText);
+                            },
+                            (errorMessage) => {
+                                // Erreur de scan (normal, se produit en continu)
+                            }
+                        ).then(() => {
+                            isScanning = true;
+                            cameraStatus.innerHTML = `
+                                <div class="text-success mb-3">
+                                    <i class="fas fa-camera fa-2x mb-2"></i>
+                                    <p><strong>Caméra active</strong></p>
+                                    <p class="small">Pointez vers un QR code</p>
+                                </div>
+                                <button type="button" class="btn btn-danger btn-sm" id="stopCamera">
+                                    <i class="fas fa-stop me-1"></i>Arrêter
+                                </button>
+                            `;
+                            
+                            // Ajouter l'événement pour arrêter la caméra
+                            document.getElementById('stopCamera').addEventListener('click', stopQrCodeScanner);
+                            
+                        }).catch(err => {
+                            showCameraError(`Erreur caméra: ${err}`);
+                        });
+                    } else {
+                        showCameraError("Aucune caméra détectée");
+                    }
+                }).catch(err => {
+                    showCameraError(`Erreur d'accès: ${err}`);
+                });
+            }
+
+            function stopQrCodeScanner() {
+                if (html5QrCode && isScanning) {
+                    html5QrCode.stop().then(() => {
+                        isScanning = false;
+                        html5QrCode.clear();
+                        resetCameraStatus();
+                    }).catch(err => {
+                        console.log("Erreur arrêt caméra:", err);
+                        resetCameraStatus();
+                    });
+                }
+            }
+
+            function resetCameraStatus() {
+                cameraStatus.innerHTML = `
+                    <i class="fas fa-camera fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted mb-3">Scanner QR code avec la caméra</h5>
+                    <button type="button" class="btn btn-success" id="startCamera">
+                        <i class="fas fa-play me-2"></i>Démarrer la caméra
+                    </button>
+                `;
+                startCameraBtn.style.display = 'inline-block';
+                
+                // Ré-ajouter l'événement au nouveau bouton
+                const newStartBtn = document.getElementById('startCamera');
+                if (newStartBtn) {
+                    newStartBtn.addEventListener('click', startQrCodeScanner);
+                }
+            }
+
+            function showCameraError(message) {
+                isScanning = false;
+                cameraStatus.innerHTML = `
+                    <div class="text-danger">
+                        <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                        <p><strong>Erreur</strong></p>
+                        <p class="small">${message}</p>
+                        <button type="button" class="btn btn-warning btn-sm mt-2" onclick="location.reload()">
+                            <i class="fas fa-redo me-1"></i>Réessayer
+                        </button>
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            Vous pouvez utiliser le mode manuel ci-dessus
+                        </small>
+                    </div>
+                `;
+            }
+
+            function onQrCodeDetected(qrContent) {
+                // Arrêter le scanner
+                stopQrCodeScanner();
+                
+                // Remplir le champ manuel (au cas où l'utilisateur voudrait voir le contenu)
+                qrDataInput.value = qrContent;
+                
+                // Valider automatiquement
+                validateTicket(qrContent);
+                
+                // Notification visuelle de succès
+                scannerArea.className = 'scanner-area scanning d-flex flex-column align-items-center justify-content-center p-4';
+                
+                // Vibration si supportée (mobile)
+                if ('vibrate' in navigator) {
+                    navigator.vibrate(200);
+                }
+            }
+
+            // Gestion du formulaire de scan manuel
             scanForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
                 const qrData = qrDataInput.value.trim();
-                const scannerLocation = 'Entrée principale'; // Localisation fixe
                 
                 if (!qrData) {
                     showValidationResult({
@@ -203,6 +417,12 @@
                     return;
                 }
 
+                await validateTicket(qrData);
+            });
+
+            async function validateTicket(qrData) {
+                const scannerLocation = 'Entrée principale'; // Localisation fixe
+                
                 // Affichage de l'état "scanning"
                 scannerArea.className = 'scanner-area scanning d-flex flex-column align-items-center justify-content-center p-4';
                 showValidationResult({
@@ -243,7 +463,7 @@
                         details: 'Impossible de contacter le serveur'
                     });
                 }
-            });
+            }
 
             function showValidationResult(result) {
                 if (result.scanning) {
@@ -349,10 +569,22 @@
                         <p>En attente de scan...</p>
                     </div>
                 `;
+                
+                // Si on est en mode caméra, redémarrer le scanner
+                if (cameraModeRadio.checked && !isScanning) {
+                    resetCameraStatus();
+                }
             }
 
-            // Auto-focus sur le champ de saisie
-            qrDataInput.focus();
+            // Auto-focus sur le champ de saisie en mode manuel
+            manualModeRadio.addEventListener('change', function() {
+                if (this.checked) {
+                    setTimeout(() => qrDataInput.focus(), 100);
+                }
+            });
+
+            // Démarrer en mode caméra par défaut
+            showCameraMode();
         });
     </script>
 </body>
