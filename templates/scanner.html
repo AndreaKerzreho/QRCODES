@@ -284,23 +284,49 @@
 
                 Html5Qrcode.getCameras().then(devices => {
                     if (devices && devices.length) {
-                        // Utiliser la caméra arrière si disponible (pour mobile)
-                        let cameraId = devices[0].id;
+                        // Stratégie de sélection de caméra arrière pour mobile
+                        let cameraId = devices[0].id; // Fallback sur la première caméra
+                        
+                        console.log("Caméras disponibles:", devices);
+                        
                         if (devices.length > 1) {
-                            // Chercher la caméra arrière
-                            const rearCamera = devices.find(device => 
-                                device.label.toLowerCase().includes('back') || 
-                                device.label.toLowerCase().includes('rear') ||
-                                device.label.toLowerCase().includes('environment')
-                            );
+                            // Recherche avancée de la caméra arrière
+                            const rearCamera = devices.find(device => {
+                                const label = device.label.toLowerCase();
+                                return label.includes('back') || 
+                                       label.includes('rear') ||
+                                       label.includes('environment') ||
+                                       label.includes('world') ||
+                                       label.includes('arrière') ||
+                                       label.includes('principale');
+                            });
+                            
                             if (rearCamera) {
                                 cameraId = rearCamera.id;
+                                console.log("Caméra arrière sélectionnée:", rearCamera.label);
+                            } else {
+                                // Si pas de caméra arrière identifiée par le nom,
+                                // sur mobile, la caméra à l'index 0 est souvent la arrière
+                                console.log("Utilisation de la première caméra (souvent arrière sur mobile)");
                             }
                         }
 
+                        // Configuration optimisée pour mobile
+                        const mobileConfig = {
+                            fps: 10,
+                            qrbox: { width: 250, height: 250 },
+                            aspectRatio: 1.0,
+                            // Forcer l'utilisation de la caméra arrière
+                            videoConstraints: {
+                                facingMode: { ideal: "environment" }, // "environment" = caméra arrière
+                                width: { ideal: 1280 },
+                                height: { ideal: 720 }
+                            }
+                        };
+
                         html5QrCode.start(
                             cameraId,
-                            config,
+                            mobileConfig,
                             (decodedText, decodedResult) => {
                                 // QR code détecté avec succès
                                 onQrCodeDetected(decodedText);
@@ -313,8 +339,9 @@
                             cameraStatus.innerHTML = `
                                 <div class="text-success mb-3">
                                     <i class="fas fa-camera fa-2x mb-2"></i>
-                                    <p><strong>Caméra active</strong></p>
+                                    <p><strong>📱 Caméra arrière active</strong></p>
                                     <p class="small">Pointez vers un QR code</p>
+                                    <p class="small text-muted">Caméra: ${devices.find(d => d.id === cameraId)?.label || 'Sélectionnée'}</p>
                                 </div>
                                 <button type="button" class="btn btn-danger btn-sm" id="stopCamera">
                                     <i class="fas fa-stop me-1"></i>Arrêter
@@ -325,13 +352,54 @@
                             document.getElementById('stopCamera').addEventListener('click', stopQrCodeScanner);
                             
                         }).catch(err => {
-                            showCameraError(`Erreur caméra: ${err}`);
+                            // Si échec avec caméra arrière, essayer avec contraintes basiques
+                            console.log("Échec caméra arrière, essai configuration basique:", err);
+                            fallbackToBasicCamera(cameraId);
                         });
                     } else {
                         showCameraError("Aucune caméra détectée");
                     }
                 }).catch(err => {
                     showCameraError(`Erreur d'accès: ${err}`);
+                });
+            }
+
+            function fallbackToBasicCamera(cameraId) {
+                console.log("Tentative avec configuration basique");
+                
+                const basicConfig = {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: 1.0
+                };
+
+                html5QrCode.start(
+                    cameraId,
+                    basicConfig,
+                    (decodedText, decodedResult) => {
+                        onQrCodeDetected(decodedText);
+                    },
+                    (errorMessage) => {
+                        // Erreur normale de scan
+                    }
+                ).then(() => {
+                    isScanning = true;
+                    cameraStatus.innerHTML = `
+                        <div class="text-success mb-3">
+                            <i class="fas fa-camera fa-2x mb-2"></i>
+                            <p><strong>📱 Caméra active</strong></p>
+                            <p class="small">Pointez vers un QR code</p>
+                            <p class="small text-warning">Mode compatibilité</p>
+                        </div>
+                        <button type="button" class="btn btn-danger btn-sm" id="stopCamera">
+                            <i class="fas fa-stop me-1"></i>Arrêter
+                        </button>
+                    `;
+                    
+                    document.getElementById('stopCamera').addEventListener('click', stopQrCodeScanner);
+                    
+                }).catch(err => {
+                    showCameraError(`Impossible d'accéder à la caméra: ${err}`);
                 });
             }
 
