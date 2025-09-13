@@ -164,8 +164,13 @@ if __name__ == '__main__':
     os.makedirs('static', exist_ok=True)
     os.makedirs('generated_tickets', exist_ok=True)
     
-    print("=== Générateur de Billets Sécurisés ===")
-    print("Interface web démarrée sur http://localhost:5000")
-    print("Appuyez sur Ctrl+C pour arrêter")
+    # Configuration pour la production (Railway) ou développement local
+    port = int(os.environ.get('PORT', 5000))
+    debug_mode = os.environ.get('FLASK_ENV', 'development') == 'development'
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    if debug_mode:
+        print("=== Générateur de Billets Sécurisés ===")
+        print(f"Interface web démarrée sur http://localhost:{port}")
+        print("Appuyez sur Ctrl+C pour arrêter")
+    
+    app.run(debug=debug_mode, host='0.0.0.0', port=port)
