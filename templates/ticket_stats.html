@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistiques des Billets</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .stats-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .card {
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border: none;
+            border-radius: 15px;
+        }
+        .stats-card {
+            background: linear-gradient(45deg, #ff9a9e 0%, #fecfef 100%);
+            color: white;
+            border-radius: 15px;
+        }
+        .stats-card-success {
+            background: linear-gradient(45deg, #56ab2f 0%, #a8e6cf 100%);
+            color: white;
+            border-radius: 15px;
+        }
+        .stats-card-info {
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+        }
+        .stats-card-warning {
+            background: linear-gradient(45deg, #f7971e 0%, #ffd200 100%);
+            color: white;
+            border-radius: 15px;
+        }
+        .navbar {
+            background: rgba(255,255,255,0.95) !important;
+            backdrop-filter: blur(10px);
+        }
+        .event-item {
+            transition: all 0.3s ease;
+        }
+        .event-item:hover {
+            transform: translateX(5px);
+            background: rgba(0,0,0,0.05);
+        }
+        .progress {
+            height: 10px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="stats-container">
+        <!-- Navigation -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top">
+            <div class="container">
+                <a class="navbar-brand fw-bold" href="{{ url_for('index') }}">
+                    <i class="fas fa-chart-bar me-2"></i>Statistiques des Billets
+                </a>
+                <div class="navbar-nav ms-auto">
+                    <a class="nav-link" href="{{ url_for('index') }}">
+                        <i class="fas fa-home me-1"></i>Accueil
+                    </a>
+                    <a class="nav-link" href="{{ url_for('ticket_generator') }}">
+                        <i class="fas fa-ticket-alt me-1"></i>Générer
+                    </a>
+                    <a class="nav-link" href="{{ url_for('scanner') }}">
+                        <i class="fas fa-camera me-1"></i>Scanner
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container py-5">
+            <!-- Titre principal -->
+            <div class="row mb-5">
+                <div class="col-12 text-center text-white">
+                    <h1 class="display-4 fw-bold mb-3">
+                        <i class="fas fa-chart-bar me-3"></i>
+                        Statistiques de Billetterie
+                    </h1>
+                    <p class="lead">Tableau de bord complet de vos événements</p>
+                </div>
+            </div>
+
+            <!-- Messages Flash -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                            <i class="fas fa-{{ 'exclamation-circle' if category == 'error' else 'check-circle' }} me-2"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Statistiques principales -->
+            <div class="row g-4 mb-5">
+                <div class="col-md-3">
+                    <div class="card stats-card-success text-center">
+                        <div class="card-body">
+                            <i class="fas fa-ticket-alt fa-3x mb-3"></i>
+                            <h2 class="fw-bold">{{ stats.total_tickets_generated }}</h2>
+                            <p class="mb-0">Billets Générés</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stats-card-info text-center">
+                        <div class="card-body">
+                            <i class="fas fa-check-circle fa-3x mb-3"></i>
+                            <h2 class="fw-bold">{{ stats.total_tickets_validated }}</h2>
+                            <p class="mb-0">Billets Validés</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stats-card-warning text-center">
+                        <div class="card-body">
+                            <i class="fas fa-calendar-alt fa-3x mb-3"></i>
+                            <h2 class="fw-bold">{{ stats.events|length if stats.events else 0 }}</h2>
+                            <p class="mb-0">Événements</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stats-card text-center">
+                        <div class="card-body">
+                            <i class="fas fa-percentage fa-3x mb-3"></i>
+                            <h2 class="fw-bold">{{ "%.1f"|format(stats.validation_rate) if stats.total_tickets_generated > 0 else 0 }}%</h2>
+                            <p class="mb-0">Taux de Validation</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <!-- Détails des événements -->
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h4 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Événements Détaillés</h4>
+                        </div>
+                        <div class="card-body">
+                            {% if stats.events %}
+                                {% if stats.events is mapping %}
+                                    {% for event_name, event_data in stats.events.items() %}
+                                    <div class="event-item p-3 mb-3 border rounded">
+                                        <div class="row align-items-center">
+                                            <div class="col-md-6">
+                                                <h5 class="mb-1">
+                                                    <i class="fas fa-star text-warning me-2"></i>{{ event_name }}
+                                                </h5>
+                                                <small class="text-muted">Événement</small>
+                                            </div>
+                                            <div class="col-md-3 text-center">
+                                                <h4 class="mb-0 text-success">{{ event_data.generated if event_data is mapping else event_data }}</h4>
+                                                <small class="text-muted">Billets générés</small>
+                                            </div>
+                                            <div class="col-md-3 text-center">
+                                                {% if event_data is mapping and event_data.validated is defined %}
+                                                    <h4 class="mb-0 text-info">{{ event_data.validated }}</h4>
+                                                    <small class="text-muted">Validés</small>
+                                                    {% if event_data.generated > 0 %}
+                                                    <div class="progress mt-2">
+                                                        <div class="progress-bar bg-success" role="progressbar" 
+                                                             style="width: {{ (event_data.validated / event_data.generated * 100)|round(1) }}%">
+                                                        </div>
+                                                    </div>
+                                                    <small class="text-muted">{{ (event_data.validated / event_data.generated * 100)|round(1) }}%</small>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <h4 class="mb-0 text-info">-</h4>
+                                                    <small class="text-muted">Pas de données validation</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="text-center py-3">
+                                        <p class="text-muted">Format de données non supporté</p>
+                                    </div>
+                                {% endif %}
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-calendar-times fa-4x text-muted mb-3"></i>
+                                    <h5 class="text-muted">Aucun événement créé</h5>
+                                    <p class="text-muted">Commencez par générer des billets pour voir les statistiques</p>
+                                    <a href="{{ url_for('ticket_generator') }}" class="btn btn-primary">
+                                        <i class="fas fa-plus me-2"></i>Créer le premier billet
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panneau latéral -->
+                <div class="col-lg-4">
+                    <!-- Statistiques de validation -->
+                    {% if validation_stats %}
+                    <div class="card mb-4">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="fas fa-shield-check me-2"></i>Validations</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <h4 class="text-success">{{ validation_stats.valid_scans if validation_stats.valid_scans else 0 }}</h4>
+                                    <small class="text-muted">Scans Valides</small>
+                                </div>
+                                <div class="col-6">
+                                    <h4 class="text-danger">{{ validation_stats.invalid_scans if validation_stats.invalid_scans else 0 }}</h4>
+                                    <small class="text-muted">Scans Invalides</small>
+                                </div>
+                            </div>
+                            {% if validation_stats.recent_validations %}
+                            <hr>
+                            <h6><i class="fas fa-clock me-2"></i>Récentes Validations</h6>
+                            {% for validation in validation_stats.recent_validations[:5] %}
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <small class="text-truncate">{{ validation.event_name if validation.event_name else 'N/A' }}</small>
+                                <span class="badge bg-{{ 'success' if validation.valid else 'danger' }}">
+                                    {{ 'Valide' if validation.valid else 'Invalide' }}
+                                </span>
+                            </div>
+                            {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Auto-refresh toutes les 30 secondes si on est sur la page
+        setTimeout(function() {
+            if (document.visibilityState === 'visible') {
+                location.reload();
+            }
+        }, 30000);
+    </script>
+</body>
+</html>

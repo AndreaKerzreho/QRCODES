@@ -1,0 +1,13 @@
+{
+  "name": "qr-code-generator",
+  "version": "1.0.0",
+  "description": "Générateur de QR codes uniques avec interface web",
+  "main": "app.py",
+  "scripts": {
+    "start": "python app.py",
+    "test": "python test_generator.py"
+  },
+  "keywords": ["qr-code", "generator", "unique", "python"],
+  "author": "QR Code Generator",
+  "license": "MIT"
+}

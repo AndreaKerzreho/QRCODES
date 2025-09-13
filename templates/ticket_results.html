@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Billet Généré - TROPICAL NIGHT HALLOWEEN</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .results-container {
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+            min-height: 100vh;
+        }
+        .card {
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border: none;
+            border-radius: 15px;
+        }
+        .success-card {
+            background: linear-gradient(45deg, #56ab2f 0%, #a8e6cf 100%);
+            color: white;
+            border-radius: 15px;
+        }
+        .ticket-preview {
+            max-width: 100%;
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        @media (min-width: 768px) {
+            .ticket-preview {
+                max-width: 400px;
+            }
+        }
+        
+        @media (max-width: 767px) {
+            .ticket-preview {
+                max-width: 300px;
+            }
+        }
+        .btn-success {
+            background: linear-gradient(45deg, #56ab2f, #a8e6cf);
+            border: none;
+            border-radius: 25px;
+        }
+        .btn-success:hover {
+            background: linear-gradient(45deg, #a8e6cf, #56ab2f);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .navbar {
+            background: rgba(255,255,255,0.95) !important;
+            backdrop-filter: blur(10px);
+        }
+        .celebration {
+            animation: bounce 1s ease-in-out;
+        }
+        @keyframes bounce {
+            0%, 20%, 60%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-20px); }
+            80% { transform: translateY(-10px); }
+        }
+        .download-section {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        
+        @media (max-width: 767px) {
+            .container {
+                padding-left: 15px;
+                padding-right: 15px;
+            }
+            
+            .card-body {
+                padding: 1.5rem !important;
+            }
+            
+            .display-4 {
+                font-size: 2rem;
+            }
+            
+            .btn-lg {
+                padding: 12px 24px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="results-container">
+        <!-- Navigation -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top">
+            <div class="container">
+                <a class="navbar-brand fw-bold" href="{{ url_for('index') }}">
+                    <i class="fas fa-ticket-alt me-2"></i>Générateur de Billets
+                </a>
+                <div class="navbar-nav ms-auto">
+                    <a class="nav-link" href="{{ url_for('index') }}">
+                        <i class="fas fa-home me-1"></i>Accueil
+                    </a>
+                    <a class="nav-link" href="{{ url_for('ticket_generator') }}">
+                        <i class="fas fa-plus me-1"></i>Nouveau Billet
+                    </a>
+                    <a class="nav-link" href="{{ url_for('scanner') }}">
+                        <i class="fas fa-camera me-1"></i>Scanner
+                    </a>
+                    <a class="nav-link" href="{{ url_for('ticket_stats') }}">
+                        <i class="fas fa-chart-bar me-1"></i>Statistiques
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container py-5">
+
+            {% if results and results[0].success %}
+            {% set ticket = results[0] %}
+            <!-- Résultat du billet -->
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                    <div class="card">
+                        <div class="card-header success-card text-center">
+                            <h3 class="mb-0">
+                                <i class="fas fa-ticket-alt me-2"></i>
+                                TROPICAL NIGHT HALLOWEEN
+                            </h3>
+                        </div>
+                        <div class="card-body p-5">
+                            <div class="row align-items-center">
+                                <!-- Aperçu du billet -->
+                                <div class="col-lg-6 col-md-12 text-center mb-4 mb-lg-0">
+                                    <h5 class="mb-3">
+                                        <i class="fas fa-qrcode me-2"></i>Votre Billet Sécurisé
+                                    </h5>
+                                    <div class="d-flex justify-content-center">
+                                        <img src="data:image/png;base64,{{ ticket.image_base64 }}" 
+                                             alt="Billet QR Code" 
+                                             class="img-fluid ticket-preview mb-3">
+                                    </div>
+                                    <div class="download-section p-3">
+                                        <p class="mb-2"><strong>{{ ticket.filename }}</strong></p>
+                                        <a href="{{ url_for('download_file', filename=ticket.filename) }}" 
+                                           class="btn btn-success btn-lg w-100">
+                                            <i class="fas fa-download me-2"></i>Télécharger le Billet
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <!-- Informations du billet -->
+                                <div class="col-lg-6 col-md-12">
+                                    <h5 class="mb-4">
+                                        <i class="fas fa-info-circle me-2"></i>Détails du Billet
+                                    </h5>
+                                    
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4"><strong>Événement:</strong></div>
+                                        <div class="col-sm-8">{{ ticket.event_name }}</div>
+                                    </div>
+                                    
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4"><strong>Participant:</strong></div>
+                                        <div class="col-sm-8">{{ ticket.buyer_name }}</div>
+                                    </div>
+                                    
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4"><strong>ID Billet:</strong></div>
+                                        <div class="col-sm-8"><code>{{ ticket.ticket_id[:8] }}...</code></div>
+                                    </div>
+                                    
+                                    <div class="row mb-4">
+                                        <div class="col-sm-4"><strong>Statut:</strong></div>
+                                        <div class="col-sm-8">
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-shield-alt me-1"></i>Sécurisé & Valide
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <!-- Erreur de génération -->
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-body text-center py-5">
+                            <i class="fas fa-exclamation-triangle fa-4x text-warning mb-4"></i>
+                            <h3 class="text-danger mb-3">Erreur de Génération</h3>
+                            <p class="text-muted mb-4">Le billet n'a pas pu être généré correctement.</p>
+                            <a href="{{ url_for('ticket_generator') }}" class="btn btn-primary">
+                                <i class="fas fa-redo me-2"></i>Réessayer
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

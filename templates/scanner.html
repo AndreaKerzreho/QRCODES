@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scanner de Billets</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .scanner-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .card {
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border: none;
+            border-radius: 15px;
+        }
+        .navbar {
+            background: rgba(255,255,255,0.95) !important;
+            backdrop-filter: blur(10px);
+        }
+        .scanner-area {
+            background: #f8f9fa;
+            border: 2px dashed #6c757d;
+            border-radius: 15px;
+            min-height: 300px;
+            transition: all 0.3s ease;
+        }
+        .scanner-area.scanning {
+            border-color: #0d6efd;
+            background: #e7f3ff;
+        }
+        .scanner-area.valid {
+            border-color: #198754;
+            background: #d1e7dd;
+        }
+        .scanner-area.invalid {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+        .validation-result {
+            display: none;
+        }
+        .btn-scanner {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 25px;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+        }
+        .btn-scanner:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="scanner-container">
+        <!-- Navigation -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top">
+            <div class="container">
+                <a class="navbar-brand fw-bold" href="{{ url_for('index') }}">
+                    <i class="fas fa-camera me-2"></i>QR & Tickets Scanner
+                </a>
+                <div class="navbar-nav ms-auto">
+                    <a class="nav-link" href="{{ url_for('index') }}">
+                        <i class="fas fa-home me-1"></i>Accueil
+                    </a>
+                    <a class="nav-link" href="{{ url_for('ticket_generator') }}">
+                        <i class="fas fa-ticket-alt me-1"></i>Billets
+                    </a>
+                    <a class="nav-link" href="{{ url_for('ticket_stats') }}">
+                        <i class="fas fa-chart-bar me-1"></i>Statistiques
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container py-5">
+            <div class="row">
+                <!-- Zone de scan -->
+                <div class="col-lg-8 mb-4">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h4 class="mb-0">
+                                <i class="fas fa-qrcode me-2"></i>Scanner QR Code
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <!-- Zone de saisie manuelle -->
+                            <div class="scanner-area d-flex flex-column align-items-center justify-content-center p-4" id="scannerArea">
+                                <i class="fas fa-qrcode fa-4x text-muted mb-3"></i>
+                                <h5 class="text-muted mb-3">Scannez ou saisissez le QR code</h5>
+                                <div class="w-100" style="max-width: 500px;">
+                                    <form id="scanForm">
+                                        <div class="mb-3">
+                                            <label for="qrData" class="form-label">
+                                                <i class="fas fa-keyboard me-1"></i>Contenu du QR Code
+                                            </label>
+                                            <textarea class="form-control" id="qrData" name="qr_data" rows="4" 
+                                                      placeholder="Collez ici le contenu du QR code ou scannez avec votre téléphone..."></textarea>
+                                        </div>
+                                        
+                                        <div class="d-grid">
+                                            <button type="submit" class="btn btn-scanner text-white">
+                                                <i class="fas fa-search me-2"></i>Valider le Billet
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Résultats de validation -->
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-clipboard-check me-2"></i>Résultat de Validation
+                            </h5>
+                        </div>
+                        <div class="card-body" id="validationResults">
+                            <div class="text-center text-muted">
+                                <i class="fas fa-clock fa-3x mb-3"></i>
+                                <p>En attente de scan...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Instructions -->
+                    <div class="card mt-4">
+                        <div class="card-body">
+                            <h6><i class="fas fa-info-circle me-2"></i>Instructions</h6>
+                            <div class="text-muted">
+                                <small>
+                                    <strong>Scanner avec téléphone :</strong><br>
+                                    1. Ouvrez l'appareil photo<br>
+                                    2. Pointez vers le QR code<br>
+                                    3. Copiez le contenu détecté<br>
+                                    4. Collez dans le champ ci-contre<br><br>
+                                    
+                                    <strong>Saisie manuelle :</strong><br>
+                                    • Collez directement le contenu<br>
+                                    • Vérifiez qu'il commence par "TICKET_V1:"<br>
+                                    • Cliquez sur "Valider"<br><br>
+                                    
+                                    <strong>Entrée unique :</strong><br>
+                                    • Tous les scans sont enregistrés à l'entrée principale
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historique récent -->
+            <div class="row mt-5">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-history me-2"></i>Validations Récentes
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="recentValidations">
+                                <div class="text-center text-muted">
+                                    <p>Aucune validation récente</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let recentValidations = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const scanForm = document.getElementById('scanForm');
+            const scannerArea = document.getElementById('scannerArea');
+            const validationResults = document.getElementById('validationResults');
+            const qrDataInput = document.getElementById('qrData');
+
+            // Gestion du formulaire de scan
+            scanForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const qrData = qrDataInput.value.trim();
+                const scannerLocation = 'Entrée principale'; // Localisation fixe
+                
+                if (!qrData) {
+                    showValidationResult({
+                        valid: false,
+                        error: 'Veuillez saisir le contenu du QR code'
+                    });
+                    return;
+                }
+
+                // Affichage de l'état "scanning"
+                scannerArea.className = 'scanner-area scanning d-flex flex-column align-items-center justify-content-center p-4';
+                showValidationResult({
+                    scanning: true
+                });
+
+                try {
+                    // Envoyer la validation au serveur
+                    const formData = new FormData();
+                    formData.append('qr_data', qrData);
+                    formData.append('scanner_location', scannerLocation);
+                    formData.append('timestamp', new Date().toISOString());
+
+                    const response = await fetch('/validate-ticket', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+                    
+                    // Afficher le résultat
+                    showValidationResult(result);
+                    
+                    // Ajouter à l'historique
+                    if (result.valid) {
+                        addToRecentValidations(result, scannerLocation);
+                    }
+                    
+                    // Réinitialiser le formulaire après 3 secondes
+                    setTimeout(() => {
+                        resetScanner();
+                    }, 3000);
+
+                } catch (error) {
+                    showValidationResult({
+                        valid: false,
+                        error: 'Erreur de connexion',
+                        details: 'Impossible de contacter le serveur'
+                    });
+                }
+            });
+
+            function showValidationResult(result) {
+                if (result.scanning) {
+                    validationResults.innerHTML = `
+                        <div class="text-center text-primary">
+                            <i class="fas fa-spinner fa-spin fa-3x mb-3"></i>
+                            <p>Validation en cours...</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                if (result.valid) {
+                    scannerArea.className = 'scanner-area valid d-flex flex-column align-items-center justify-content-center p-4';
+                    
+                    const ticketData = result.ticket_data;
+                    const buyerInfo = ticketData.buyer_info || {};
+                    
+                    validationResults.innerHTML = `
+                        <div class="text-center text-success">
+                            <i class="fas fa-check-circle fa-3x mb-3"></i>
+                            <h5 class="text-success">✓ BILLET VALIDE</h5>
+                            <div class="mt-3 text-start">
+                                <strong>Événement:</strong> ${ticketData.event_name}<br>
+                                <strong>Acheteur:</strong> ${buyerInfo.nom || 'Non spécifié'}<br>
+                                <strong>Type:</strong> ${ticketData.additional_data?.type_billet || 'Standard'}<br>
+                                <strong>ID:</strong> ${ticketData.ticket_id}<br>
+                                ${result.first_use ? '<span class="badge bg-success mt-2">Première utilisation</span>' : ''}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    scannerArea.className = 'scanner-area invalid d-flex flex-column align-items-center justify-content-center p-4';
+                    
+                    validationResults.innerHTML = `
+                        <div class="text-center text-danger">
+                            <i class="fas fa-times-circle fa-3x mb-3"></i>
+                            <h5 class="text-danger">✗ BILLET INVALIDE</h5>
+                            <div class="mt-3 text-start">
+                                <strong>Erreur:</strong> ${result.error}<br>
+                                ${result.details ? `<strong>Détails:</strong> ${result.details}<br>` : ''}
+                                ${result.previous_validation ? 
+                                    `<span class="badge bg-warning mt-2">Déjà utilisé le ${new Date(result.previous_validation.validated_at).toLocaleString()}</span>` 
+                                    : ''
+                                }
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            function addToRecentValidations(result, location) {
+                const validation = {
+                    timestamp: new Date().toLocaleString(),
+                    event: result.ticket_data.event_name,
+                    buyer: result.ticket_data.buyer_info?.nom || 'Non spécifié',
+                    location: location,
+                    ticketId: result.ticket_data.ticket_id
+                };
+                
+                recentValidations.unshift(validation);
+                if (recentValidations.length > 10) {
+                    recentValidations.pop();
+                }
+                
+                updateRecentValidationsDisplay();
+            }
+
+            function updateRecentValidationsDisplay() {
+                const container = document.getElementById('recentValidations');
+                
+                if (recentValidations.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center text-muted">
+                            <p>Aucune validation récente</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const html = recentValidations.map(v => `
+                    <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+                        <div>
+                            <strong>${v.event}</strong><br>
+                            <small class="text-muted">${v.buyer}</small>
+                        </div>
+                        <div class="text-end">
+                            <small class="text-muted">${v.timestamp}</small><br>
+                            <code class="small">${v.ticketId.substring(0, 8)}...</code>
+                        </div>
+                    </div>
+                `).join('');
+
+                container.innerHTML = html;
+            }
+
+            function resetScanner() {
+                scannerArea.className = 'scanner-area d-flex flex-column align-items-center justify-content-center p-4';
+                qrDataInput.value = '';
+                validationResults.innerHTML = `
+                    <div class="text-center text-muted">
+                        <i class="fas fa-clock fa-3x mb-3"></i>
+                        <p>En attente de scan...</p>
+                    </div>
+                `;
+            }
+
+            // Auto-focus sur le champ de saisie
+            qrDataInput.focus();
+        });
+    </script>
+</body>
+</html>

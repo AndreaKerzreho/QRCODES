@@ -1,0 +1,74 @@
+{
+  "d5c6f808-ee7a-4c5c-aebb-c51729497865": {
+    "ticket_id": "d5c6f808-ee7a-4c5c-aebb-c51729497865",
+    "validated_at": "2025-09-13T20:38:14.683312",
+    "scanner_info": {
+      "location": "Entrée principale",
+      "validated_at": "2025-09-13T18:38:14.678Z",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+    },
+    "ticket_data": {
+      "event_name": "TROPICAL NIGHT HALLOWEEN",
+      "ticket_id": "d5c6f808-ee7a-4c5c-aebb-c51729497865",
+      "generated_at": "2025-09-13T19:46:11.288583",
+      "event_date": null,
+      "buyer_info": {
+        "nom": "Invité-194611",
+        "email": "",
+        "achat_le": "2025-09-13T19:46:11.288574"
+      },
+      "additional_data": {
+        "type_billet": "Standard",
+        "prix": ""
+      }
+    }
+  },
+  "f1652f64-0a62-4567-8be8-a489a6389230": {
+    "ticket_id": "f1652f64-0a62-4567-8be8-a489a6389230",
+    "validated_at": "2025-09-13T20:47:55.008964",
+    "scanner_info": {
+      "location": "Entrée principale",
+      "validated_at": "2025-09-13T18:47:55.004Z",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+    },
+    "ticket_data": {
+      "event_name": "TROPICAL NIGHT HALLOWEEN",
+      "ticket_id": "f1652f64-0a62-4567-8be8-a489a6389230",
+      "generated_at": "2025-09-13T20:35:55.992912",
+      "event_date": null,
+      "buyer_info": {
+        "nom": "Invité-203555",
+        "email": "",
+        "achat_le": "2025-09-13T20:35:55.992903"
+      },
+      "additional_data": {
+        "type_billet": "Standard",
+        "prix": ""
+      }
+    }
+  },
+  "79600ac9-5743-4102-ac41-1ae130fd20cc": {
+    "ticket_id": "79600ac9-5743-4102-ac41-1ae130fd20cc",
+    "validated_at": "2025-09-13T21:10:44.670854",
+    "scanner_info": {
+      "location": "Entrée principale",
+      "validated_at": "2025-09-13T19:10:44.668Z",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+    },
+    "ticket_data": {
+      "event_name": "TROPICAL NIGHT HALLOWEEN",
+      "ticket_id": "79600ac9-5743-4102-ac41-1ae130fd20cc",
+      "generated_at": "2025-09-13T21:06:53.432508",
+      "event_date": null,
+      "buyer_info": {
+        "nom": "Invité-210653",
+        "email": "",
+        "achat_le": "2025-09-13T21:06:53.432497"
+      },
+      "additional_data": {
+        "type_billet": "Standard",
+        "prix": ""
+      }
+    }
+  }
+}
